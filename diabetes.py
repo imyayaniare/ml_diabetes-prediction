@@ -9,6 +9,9 @@ Original file is located at
 
 import pandas as pd
 import matplotlib.pyplot as plt
+import joblib
+import numpy as np
+
 from sklearn.preprocessing import StandardScaler
 
 from sklearn.cluster import KMeans
@@ -23,8 +26,8 @@ from sklearn.metrics import accuracy_score, confusion_matrix, classification_rep
 df = pd.read_csv('diabetes.csv')
 df.head()
 
-# Certaines colonnes ont des 0 qui représentent en réalité des données manquantes.
-# On les remplace par la moyenne ou médiane de la colonne
+# Some columns contain zeros that actually represent missing data.
+# We replace them with the mean or median of the column.
 columns_with_zero = ["Glucose", "BloodPressure", "SkinThickness", "Insulin", "BMI"]
 
 for col in columns_with_zero:
@@ -33,63 +36,41 @@ for col in columns_with_zero:
 df.hist(figsize=(10,8))
 plt.show()
 
-# standardisation
+# Standardization
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(df.drop("Outcome", axis=1))
 
-# K-Means avec 3 clusters
+# K-Means with 3 clusters
 kmeans = KMeans(n_clusters=3, random_state=42)
 clusters = kmeans.fit_predict(X_scaled)
 
-# Ajouter le cluster dans le dataframe
+# Add cluster to dataframe
 df['Cluster'] = clusters
 
 cluster_summary = df.groupby('Cluster').mean()
 print(cluster_summary)
 
-# Features : toutes les colonnes sauf Outcome
+# Features : All columns except Outcome
 X = df.drop("Outcome", axis=1)
 y = df["Outcome"]
 
-# Séparer train/test
+# Separate train/test
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# Créer le modèle
+# Create model
 model = LogisticRegression(max_iter=1000)
 model.fit(X_train, y_train)
 
-# Prédictions
+# Predictions
 y_pred = model.predict(X_test)
 
-# Évaluation
+# Evaluation
 print("Accuracy:", accuracy_score(y_test, y_pred))
 print("ROC-AUC:", roc_auc_score(y_test, model.predict_proba(X_test)[:,1]))
 print("Classification Report:\n", classification_report(y_test, y_pred))
 
-import numpy as np
-
-# Exemple : [Pregnancies, Glucose, BloodPressure, SkinThickness, Insulin, BMI, DiabetesPedigreeFunction, Age, Cluster]
-# Remplace les valeurs selon le profil du patient
-new_patients = np.array([
-    [2, 120, 70, 25, 80, 28.0, 0.4, 30, 1],  # Patient jeune, faible risque
-    [5, 160, 85, 30, 200, 36.0, 0.7, 45, 0], # Patient plus âgé, haut risque
-    [3, 130, 75, 28, 90, 32.0, 0.5, 35, 2]   # Patient intermédiaire
-])
-
-# Normaliser avec le même scaler que pour le modèle
-new_patients_scaled = scaler.transform(new_patients)
-
-# Prédire si le patient aura le diabète
-predictions = rf_model.predict(new_patients_scaled)
-probabilities = rf_model.predict_proba(new_patients_scaled)[:,1]
-
-for i, (pred, prob) in enumerate(zip(predictions, probabilities)):
-    print(f"Patient {i+1} → Diabète prédit : {pred} (probabilité {prob:.2f})")
-
-import joblib
-
-# Sauvegarder le modèle Random Forest
+# Save Random Forest model
 joblib.dump(rf_model, "diabetes_model.pkl")
 
-# Sauvegarder le scaler
+# Save scaler
 joblib.dump(scaler, "scaler.pkl")

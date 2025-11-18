@@ -3,11 +3,11 @@ from pydantic import BaseModel
 import numpy as np
 import joblib
 
-# Charger le modèle et le scaler
+# Charge model and scaler
 model = joblib.load("diabetes_model.pkl")
 scaler = joblib.load("scaler.pkl")
 
-# Définir la structure des données reçues
+# Define the structure of the incoming data
 class Patient(BaseModel):
     Pregnancies: float
     Glucose: float
@@ -17,20 +17,20 @@ class Patient(BaseModel):
     BMI: float
     DiabetesPedigreeFunction: float
     Age: float
-    Cluster: int  # la feature cluster issue du KMeans
+    Cluster: int  # feature cluster from KMeans
 
-# Créer l'application FastAPI
+# Create FastAPI app
 app = FastAPI()
 
-# Route principale
+# Main route
 @app.get("/")
 def read_root():
     return {"message": "Bienvenue sur l'API de prédiction du diabète"}
 
-# Route pour prédire
+# Prediction route
 @app.post("/predict")
 def predict_diabetes(patient: Patient):
-    # Transformer les données en array
+    # Transform data in array
     data = np.array([[patient.Pregnancies,
                       patient.Glucose,
                       patient.BloodPressure,
@@ -41,10 +41,10 @@ def predict_diabetes(patient: Patient):
                       patient.Age,
                       patient.Cluster]])
     
-    # Normaliser avec le scaler
+    # Normalisation with scaler
     data_scaled = scaler.transform(data)
     
-    # Prédiction
+    # Prediction
     prediction = model.predict(data_scaled)[0]
     probability = model.predict_proba(data_scaled)[0][1]
     
